@@ -1,11 +1,5 @@
 import mongoose from "mongoose";
 
-const MONGODB_URI = process.env.MONGODB_URI as string;
-
-if (!MONGODB_URI) {
-  throw new Error("Please define the MONGODB_URI environment variable in .env.local");
-}
-
 /**
  * Global cache to avoid creating a new connection on every hot-reload / lambda
  * invocation in dev and serverless environments.
@@ -161,7 +155,18 @@ export async function connectDB(): Promise<typeof mongoose> {
   if (cached.conn) return cached.conn;
 
   if (!cached.promise) {
-    cached.promise = mongoose.connect(MONGODB_URI, {
+    // Read the URI at call time, NOT at module load. next build imports this
+    // file while collecting page data — a top-level throw kills the whole
+    // build if MONGODB_URI isn't present in the build environment, even
+    // though Render injects it at runtime for the running server.
+    const uri = process.env.MONGODB_URI;
+    if (!uri) {
+      throw new Error(
+        "Please define the MONGODB_URI environment variable in Render → your service → Environment."
+      );
+    }
+
+    cached.promise = mongoose.connect(uri, {
       bufferCommands: false,
     });
   }
