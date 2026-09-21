@@ -1,0 +1,27 @@
+export const demoTrialBalance2AsOf = "20-Aug-2026";
+
+export const demoTrialBalance2Full = [
+  { code: 1, description: "Cash in Hand", debit: 10170, credit: null },
+  { code: 10, description: "Other Income", debit: null, credit: null },
+  { code: 11, description: "Electricity Bill", debit: 6141, credit: null },
+  { code: 12, description: "Ishfaq", debit: 300, credit: null },
+  { code: 13, description: "Asif", debit: 14600, credit: null },
+  { code: 14, description: "Atif", debit: null, credit: 43740 },
+  { code: 15, description: "Milk", debit: 10780, credit: null },
+  { code: 16, description: "Asif", debit: 3130, credit: null },
+  { code: 17, description: "Ayoub", debit: 4880, credit: null },
+  { code: 18, description: "Wasif", debit: 1630, credit: null },
+  { code: 19, description: "Akif", debit: 1020, credit: null },
+  { code: 2, description: "UBL Bank", debit: 44398, credit: null },
+  { code: 20, description: "Refreshment", debit: 7900, credit: null },
+  { code: 21, description: "Expenses", debit: 9127, credit: null },
+  { code: 22, description: "Rashan", debit: 17500, credit: null },
+  { code: 23, description: "SA", debit: 900, credit: null },
+  { code: 24, description: "Motor Cycle", debit: 8840, credit: null },
+  { code: 3, description: "Gas Bill", debit: 7850, credit: null },
+  { code: 4, description: "Other Expenses", debit: 4313, credit: null },
+  { code: 5, description: "Salary", debit: null, credit: 100000 },
+  { code: 6, description: "House Rent", debit: 28000, credit: null },
+  { code: 7, description: "Compensation", debit: null, credit: null },
+  { code: 8, description: "Iftakhar", debit: 100, credit: null },
+];
