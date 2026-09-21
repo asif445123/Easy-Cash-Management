@@ -6,6 +6,12 @@ import Account from "@/models/Account";
 import AccountType from "@/models/AccountType";
 import { getAccountMovements } from "@/lib/ledger";
 
+type ReportRow = {
+  code: string;
+  description: string;
+  months: number[];
+};
+
 /**
  * Month-wise report data for one calendar year — shared by both the
  * "Month wise report" page (shows one year) and "Month wise comparison"
@@ -63,7 +69,7 @@ export async function GET(req: NextRequest) {
       return months;
     }
 
-    const incomeRows = [];
+    const incomeRows: ReportRow[] = [];
     for (const a of incomeAccounts) {
       incomeRows.push({
         code: a.code,
@@ -72,7 +78,7 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    const expenseRows = [];
+    const expenseRows: ReportRow[] = [];
     for (const a of expenseAccounts) {
       expenseRows.push({
         code: a.code,
