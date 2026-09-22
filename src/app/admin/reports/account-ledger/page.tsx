@@ -88,7 +88,7 @@ export default function AccountLedgerReportPage() {
     <main className="min-h-screen bg-paper">
       <AdminHeader />
 
-      <div className="max-w-4xl mx-auto px-6 pb-16">
+      <div className="max-w-6xl mx-auto px-6 pb-16">
         <h1 className="font-display text-2xl font-bold text-ink mb-6">Account Ledger</h1>
 
         <form onSubmit={loadReport} className="bg-white rounded-2xl border border-ink/10 p-6 mb-6 space-y-4">
