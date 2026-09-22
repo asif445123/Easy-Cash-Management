@@ -82,7 +82,7 @@ export default function AdminHeader({ extraLinks = [] }: AdminHeaderProps) {
   );
 
   return (
-    <header className="max-w-5xl mx-auto px-6 py-6">
+    <header className="max-w-8xl mx-auto px-6 py-6">
       <div className="flex items-center justify-between">
         <Link href="/dashboard" className="flex items-center gap-2">
           <span className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-accent font-display font-bold">
