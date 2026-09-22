@@ -66,8 +66,14 @@ export default function AdminPage() {
         {loading ? (
           <p className="text-ink/50 text-sm">Loading users…</p>
         ) : (
-          <div className="bg-white rounded-2xl border border-ink/10 overflow-hidden">
-            <table className="w-full text-sm">
+          // overflow-x-auto (was overflow-hidden): on a narrow screen, Name +
+          // Email + Status + Actions don't all fit. With overflow-hidden the
+          // Status/Actions columns were just clipped off-screen entirely —
+          // not scrollable, just gone. This lets the table scroll sideways
+          // instead, and min-w-[520px] on the table keeps every column at a
+          // readable width rather than letting them get crushed.
+          <div className="bg-white rounded-2xl border border-ink/10 overflow-x-auto">
+            <table className="w-full text-sm min-w-[520px]">
               <thead className="bg-ink/[0.03] text-ink/50 text-xs uppercase tracking-wide">
                 <tr>
                   <th className="text-left px-5 py-3">Name</th>
