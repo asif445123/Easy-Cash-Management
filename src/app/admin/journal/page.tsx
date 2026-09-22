@@ -248,8 +248,12 @@ export default function JournalVoucherPage() {
             </Field>
           </div>
 
-          <div className="border border-ink/10 rounded-lg">
-            <table className="w-full text-sm">
+          {/* overflow-x-auto: on a narrow screen the 4 data columns (Account
+              code / Narration / Debit / Credit) don't fit — without this the
+              browser used to squeeze the Debit/Credit inputs down until they
+              were unusable instead of letting the table scroll sideways. */}
+          <div className="border border-ink/10 rounded-lg overflow-x-auto">
+            <table className="w-full text-sm min-w-[560px]">
               <thead className="bg-ink/[0.03] text-ink/50 text-xs uppercase tracking-wide">
                 <tr>
                   <th className="text-left px-3 py-2 w-10">#</th>
@@ -350,13 +354,18 @@ export default function JournalVoucherPage() {
         </form>
 
         <div className="bg-white rounded-2xl border border-ink/10 p-4 mb-3 flex flex-wrap items-center gap-3">
-          <div className="flex rounded-lg border border-ink/15 overflow-hidden text-sm">
+          {/* overflow-x-auto + flex-nowrap: the search-mode pill group used
+              `overflow-hidden` to keep its rounded-corner look, but that meant
+              once the 4 buttons didn't fit a narrow screen, "Account Wise"
+              was silently clipped off and unreachable rather than just
+              visually cut. Now it scrolls instead of clipping. */}
+          <div className="flex flex-nowrap rounded-lg border border-ink/15 overflow-x-auto text-sm max-w-full">
             {(["serial", "date", "narration", "account"] as const).map((mode) => (
               <button
                 key={mode}
                 type="button"
                 onClick={() => changeSearchMode(mode)}
-                className={`px-3 py-1.5 whitespace-nowrap ${
+                className={`px-3 py-1.5 whitespace-nowrap shrink-0 ${
                   searchMode === mode ? "bg-primary text-white" : "text-ink/70 hover:bg-ink/5"
                 }`}
               >
@@ -411,7 +420,7 @@ export default function JournalVoucherPage() {
         </div>
 
         <div className="bg-white rounded-2xl border border-ink/10 overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm min-w-[560px]">
             <thead className="bg-ink/[0.03] text-ink/50 text-xs uppercase tracking-wide">
               <tr>
                 <th className="text-left px-5 py-3">Serial</th>
