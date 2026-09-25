@@ -4,6 +4,7 @@ import { requireApprovedUser } from "@/lib/auth";
 import { handleApiError } from "@/lib/db-errors";
 import Account from "@/models/Account";
 import AccountType from "@/models/AccountType";
+import TellyCash from "@/models/TellyCash"; // ← NEW
 import { getAccountBalance, getAccountMovements } from "@/lib/ledger";
 
 function firstOfMonth() {
@@ -29,6 +30,13 @@ function firstOfMonth() {
  *   Journal Voucher entries via the same getAccountMovements() used by
  *   Trial Balance and Account Ledger, so the numbers agree with those
  *   reports for the same range.
+ *
+ * Cash-vs-bank split and telly status (NEW):
+ *   Within the Cash/Bank group, an account counts as "Cash" (and gets a
+ *   telly tick/cross on the dashboard) when its type or description
+ *   contains "cash". Everything else in that group is treated as a bank
+ *   account and shows no telly badge. tellyMatched is derived from the
+ *   most recent TellyCash entry for that account (difference ≈ 0).
  *
  * A user with no accounts/entries yet gets all zeros and empty lists —
  * never another user's data.
@@ -89,6 +97,36 @@ export async function GET(req: NextRequest) {
       });
     }
 
+    // ── NEW: which accounts are truly "Cash" (vs Bank)? ─────────────────
+    // Only Cash accounts get a telly badge on the dashboard. Bank accounts
+    // stay badge-free even if someone saved a telly against them.
+    const isCashAccountDoc = (a: { type?: string; description?: string }) =>
+      /cash/i.test(a.type || "") || /cash/i.test(a.description || "");
+
+    const cashOnlyCodes = cashBankAccountDocs
+      .filter(isCashAccountDoc)
+      .map((a) => a.code);
+
+    // Fetch every telly for these accounts, newest-first, and keep the
+    // latest per accountCode. Uses the same userId value the POST route
+    // writes, so the filter always matches.
+    const tellyDocs = cashOnlyCodes.length
+      ? await TellyCash.find({
+          userId: user.userId,
+          accountCode: { $in: cashOnlyCodes },
+        })
+          .sort({ date: -1, createdAt: -1 })
+          .lean()
+      : [];
+
+    const latestTellyByCode = new Map<string, (typeof tellyDocs)[number]>();
+    for (const t of tellyDocs) {
+      if (!latestTellyByCode.has(t.accountCode)) {
+        latestTellyByCode.set(t.accountCode, t);
+      }
+    }
+    // ────────────────────────────────────────────────────────────────────
+
     const now = new Date();
 
     const cashBankAccounts = [];
@@ -96,11 +134,21 @@ export async function GET(req: NextRequest) {
     for (const account of cashBankAccountDocs) {
       const currentBalance = await getAccountBalance(user.userId, account, now);
       balance += currentBalance;
+
+      // NEW: attach cash/telly status per account.
+      const isCash = isCashAccountDoc(account);
+      const telly = isCash ? latestTellyByCode.get(account.code) : undefined;
+      const tellyMatched =
+        !!telly && Math.abs(Number(telly.difference) || 0) < 0.01;
+
       cashBankAccounts.push({
         code: account.code,
         description: account.description,
         opening: account.openingDebit - account.openingCredit,
         balance: currentBalance,
+        isCash,
+        hasTelly: !!telly,
+        tellyMatched,
       });
     }
 

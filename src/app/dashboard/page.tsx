@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import AdminHeader from "@/components/AdminHeader";
 import ExpensePieChart from "@/components/ExpensePieChart";
@@ -18,6 +19,9 @@ interface CashBankAccount {
   description: string;
   opening: number;
   balance: number;
+  isCash?: boolean;        // optional — falls back to name match
+  hasTelly?: boolean;      // optional — defaults to false
+  tellyMatched?: boolean;  // optional — defaults to false
 }
 
 interface ExpenseBreakdownItem {
@@ -45,8 +49,6 @@ const emptySummary: Summary = {
   recentTransactions: [],
 };
 
-// Same palette, in the same order, as ExpensePieChart's COLORS array — kept
-// in sync here so each breakdown box's accent color matches its pie slice.
 const CHART_COLORS = [
   "#2563EB",
   "#B3452C",
@@ -60,19 +62,12 @@ const CHART_COLORS = [
   "#9333EA",
 ];
 
-// Same logic as ExpensePieChart's getColor(): use the fixed 10-color
-// palette while there's room, then generate additional colors via the
-// golden-angle instead of wrapping back around and repeating a color
-// already used by an earlier box (which made e.g. box #11 the same blue
-// as box #1 once there were more than 10 expense categories).
 function getChartColor(index: number): string {
   if (index < CHART_COLORS.length) return CHART_COLORS[index];
   const hue = (index * 137.508) % 360;
   return `hsl(${hue}, 65%, 45%)`;
 }
 
-// Format a Date using LOCAL year/month/day (avoids the UTC shift that
-// `toISOString().slice(0, 10)` introduces for timezones ahead of UTC).
 function toLocalDateStr(d: Date) {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
@@ -146,9 +141,7 @@ export default function DashboardPage() {
           <StatCard label="Income" value={summary.income} tone="primary" loading={loadingSummary} />
           <StatCard label="Expense" value={summary.expense} tone="danger" loading={loadingSummary} />
           {!loadingSummary &&
-            summary.cashBankAccounts.map((a) => (
-              <StatCard key={a.code} label={a.description} value={a.balance} tone="ink" loading={false} />
-            ))}
+            summary.cashBankAccounts.map((a) => <CashAccountCard key={a.code} account={a} />)}
           <StatCard label="Balance" value={summary.balance} tone="primary" loading={loadingSummary} />
         </div>
 
@@ -205,6 +198,91 @@ export default function DashboardPage() {
         )}
       </div>
     </main>
+  );
+}
+
+function CashAccountCard({ account }: { account: CashBankAccount }) {
+  const router = useRouter();
+
+  // If the API sends isCash, trust it. Otherwise fall back to a name match
+  // so "Cash in Hand" gets a badge and "UBL Bank" does not.
+  const isCash =
+    typeof account.isCash === "boolean"
+      ? account.isCash
+      : /cash|hand|petty/i.test(account.description || "");
+
+  const matched = account.tellyMatched === true;
+
+  function openTelly() {
+    router.push(`/admin/telly-cash?accountCode=${encodeURIComponent(account.code)}`);
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-ink/10 p-5">
+      <div className="flex items-start justify-between gap-2 mb-1">
+        <p className="text-xs uppercase tracking-widest text-ink/40 truncate">
+          {account.description}
+        </p>
+
+        {isCash && (
+          <button
+            type="button"
+            onClick={matched ? undefined : openTelly}
+            disabled={matched}
+            aria-label={matched ? "Cash tallied — matches system" : "Cash not tallied — open Telly Cash"}
+            title={
+              matched
+                ? "Telly matched with system balance"
+                : account.hasTelly
+                  ? "Telly does not match — click to recount"
+                  : "Cash not tallied yet — click to count"
+            }
+            className={`shrink-0 w-6 h-6 rounded-full grid place-items-center border transition-colors ${
+              matched
+                ? "bg-emerald-50 border-emerald-300 text-emerald-600 cursor-default"
+                : "bg-red-50 border-red-300 text-red-600 hover:bg-red-100 cursor-pointer"
+            }`}
+          >
+            {matched ? <CheckIcon /> : <CrossIcon />}
+          </button>
+        )}
+      </div>
+      <p className="font-display text-2xl font-bold text-ink">
+        Rs {account.balance.toLocaleString()}
+      </p>
+    </div>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="w-3.5 h-3.5"
+    >
+      <path d="M20 6 9 17l-5-5" />
+    </svg>
+  );
+}
+
+function CrossIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="w-3.5 h-3.5"
+    >
+      <path d="M18 6 6 18M6 6l12 12" />
+    </svg>
   );
 }
 

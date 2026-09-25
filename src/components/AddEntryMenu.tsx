@@ -8,12 +8,13 @@ const ENTRY_LINKS = [
   { href: "/admin/account-types", label: "Account Types" },
   { href: "/admin/accounts", label: "Accounts Master File" },
   { href: "/admin/cashbook", label: "Cash Book" },
+  { href: "/admin/telly-cash", label: "Telly Cash" },
   { href: "/admin/journal", label: "Journal Voucher" },
   { href: "/admin/motorcycle", label: "Motorcycle" },
   { href: "/admin/electricity", label: "Electricity Bill" },
 ];
 
-/** "Add Entry" navbar dropdown linking to the four accounting entry screens. */
+/** "Add Entry" navbar dropdown linking to the accounting entry screens. */
 export default function AddEntryMenu() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
