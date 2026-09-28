@@ -4,12 +4,20 @@ import { requireApprovedUser } from "@/lib/auth";
 import { handleApiError } from "@/lib/db-errors";
 import Account from "@/models/Account";
 import AccountType from "@/models/AccountType";
-import TellyCash from "@/models/TellyCash"; // ← NEW
+import TellyCash from "@/models/TellyCash";
 import { getAccountBalance, getAccountMovements } from "@/lib/ledger";
 
 function firstOfMonth() {
   const d = new Date();
   return new Date(d.getFullYear(), d.getMonth(), 1);
+}
+
+// Local YYYY-MM-DD (matches how the telly page stores `date`).
+function toLocalDateStr(d: Date) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
 /**
@@ -31,12 +39,14 @@ function firstOfMonth() {
  *   Trial Balance and Account Ledger, so the numbers agree with those
  *   reports for the same range.
  *
- * Cash-vs-bank split and telly status (NEW):
- *   Within the Cash/Bank group, an account counts as "Cash" (and gets a
- *   telly tick/cross on the dashboard) when its type or description
- *   contains "cash". Everything else in that group is treated as a bank
- *   account and shows no telly badge. tellyMatched is derived from the
- *   most recent TellyCash entry for that account (difference ≈ 0).
+ * Telly status (cash accounts only):
+ *   A cash account shows a GREEN tick only when BOTH are true:
+ *     1. A telly count exists for TODAY (local date).
+ *     2. The counted total still equals the account's CURRENT balance —
+ *        so any transaction since the count (a Rs 100 spend, a new
+ *        receipt) immediately flips the badge to red until recount.
+ *   Bank accounts (type/description doesn't contain "cash") never get a
+ *   badge, even if a telly was saved against them.
  *
  * A user with no accounts/entries yet gets all zeros and empty lists —
  * never another user's data.
@@ -97,9 +107,8 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // ── NEW: which accounts are truly "Cash" (vs Bank)? ─────────────────
-    // Only Cash accounts get a telly badge on the dashboard. Bank accounts
-    // stay badge-free even if someone saved a telly against them.
+    // ── Which of the cash/bank accounts are truly "Cash"? ───────────────
+    // Only these get a telly badge. Bank accounts stay badge-free.
     const isCashAccountDoc = (a: { type?: string; description?: string }) =>
       /cash/i.test(a.type || "") || /cash/i.test(a.description || "");
 
@@ -107,13 +116,15 @@ export async function GET(req: NextRequest) {
       .filter(isCashAccountDoc)
       .map((a) => a.code);
 
-    // Fetch every telly for these accounts, newest-first, and keep the
-    // latest per accountCode. Uses the same userId value the POST route
-    // writes, so the filter always matches.
+    // Today's date string, matching how telly entries store `date`.
+    const todayStr = toLocalDateStr(new Date());
+
+    // Force a daily count: only telly entries dated TODAY count.
     const tellyDocs = cashOnlyCodes.length
       ? await TellyCash.find({
           userId: user.userId,
           accountCode: { $in: cashOnlyCodes },
+          date: todayStr,
         })
           .sort({ date: -1, createdAt: -1 })
           .lean()
@@ -135,11 +146,14 @@ export async function GET(req: NextRequest) {
       const currentBalance = await getAccountBalance(user.userId, account, now);
       balance += currentBalance;
 
-      // NEW: attach cash/telly status per account.
       const isCash = isCashAccountDoc(account);
       const telly = isCash ? latestTellyByCode.get(account.code) : undefined;
+
+      // Green only when TODAY's count still equals the CURRENT balance.
+      // Any transaction since the count flips the badge to red.
+      const countedAmount = telly ? Number(telly.grandTotal) || 0 : 0;
       const tellyMatched =
-        !!telly && Math.abs(Number(telly.difference) || 0) < 0.01;
+        !!telly && Math.abs(countedAmount - currentBalance) < 0.01;
 
       cashBankAccounts.push({
         code: account.code,
@@ -169,7 +183,7 @@ export async function GET(req: NextRequest) {
     for (const account of incomeAccounts) {
       const movements = await getAccountMovements(user.userId, account.code, fromDate, toDate);
       for (const m of movements) {
-        const net = m.credit - m.debit; // income accounts: net credit = income recognized
+        const net = m.credit - m.debit;
         if (net <= 0) continue;
         income += net;
         transactions.push({
@@ -185,7 +199,7 @@ export async function GET(req: NextRequest) {
     for (const account of expenseAccounts) {
       const movements = await getAccountMovements(user.userId, account.code, fromDate, toDate);
       for (const m of movements) {
-        const net = m.debit - m.credit; // expense accounts: net debit = expense recognized
+        const net = m.debit - m.credit;
         if (net <= 0) continue;
         expense += net;
 
