@@ -13,20 +13,16 @@ interface Account {
   type?: string;
 }
 
-// Standard PKR note/coin denominations, matching the physical cash-count
-// sheet in the screenshot. Notes and coins are grouped with a small label
-// since that's how the paper version separates them.
 const NOTE_DENOMINATIONS = [5000, 1000, 500, 100, 50, 20, 10];
 const COIN_DENOMINATIONS = [5, 2, 1];
 
-// Far enough back to capture an account's full history when asking the
-// ledger report for a running balance — see the balance-fetch effect below.
 const LEDGER_EPOCH = "2000-01-01";
 
 interface TellyEntry {
   _id: string;
   date: string;
   accountCode: string;
+  denominations?: Record<string, number>;
   grandTotal: number;
   systemBalance: number;
   difference: number;
@@ -37,6 +33,15 @@ function toLocalDateStr(d: Date) {
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
+}
+
+// Convert a saved denominations map into the form's string-based qty state.
+function qtyFromDenominations(denoms: Record<string, number> | undefined) {
+  const next: Record<number, string> = {};
+  for (const [k, v] of Object.entries(denoms || {})) {
+    next[Number(k)] = String(v);
+  }
+  return next;
 }
 
 export default function TellyCashPage() {
@@ -50,9 +55,8 @@ export default function TellyCashPage() {
   const [history, setHistory] = useState<TellyEntry[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
-  // When set, the form is editing an existing count instead of creating one.
   const [editingId, setEditingId] = useState<string | null>(null);
-  // Bumped after any create/update/delete so the history table refetches.
+  const [originalEntry, setOriginalEntry] = useState<TellyEntry | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
@@ -63,16 +67,10 @@ export default function TellyCashPage() {
           (a: Account) => !a.type || a.type === "Cash"
         );
         setAccounts(cashAccounts.length ? cashAccounts : d.accounts || []);
-        // Default to the first Cash-type account if there's exactly one,
-        // so the common case (a single "Cash in Hand") needs no picking.
         if (cashAccounts.length === 1) setAccountCode(cashAccounts[0].code);
       });
   }, []);
 
-  // Reuses the existing Account Ledger report endpoint to get this account's
-  // current running balance (opening balance + every Cash Book and Journal
-  // Voucher entry against it, up to today) rather than duplicating that
-  // calculation here.
   useEffect(() => {
     if (!accountCode) {
       setSystemBalance(null);
@@ -105,6 +103,23 @@ export default function TellyCashPage() {
       .finally(() => setLoadingHistory(false));
   }, [accountCode, refreshKey]);
 
+  // Carry the previous telly forward. When the user isn't editing an
+  // existing entry, pre-fill the notes/coins form with the latest saved
+  // count for this account — cash on hand doesn't reset overnight, so the
+  // user only needs to adjust for today's movements instead of retyping
+  // every denomination from scratch.
+  //
+  // Skips while an edit is in progress so it never clobbers the values
+  // loaded by handleEdit. After a save, the newest entry becomes "latest"
+  // and the form naturally keeps those values for the next session.
+  useEffect(() => {
+    if (editingId) return;
+    if (history.length === 0) return;
+    const latest = history[0];
+    if (!latest.denominations) return;
+    setQty(qtyFromDenominations(latest.denominations));
+  }, [history, editingId]);
+
   function updateQty(denom: number, value: string) {
     setQty((q) => ({ ...q, [denom]: value }));
   }
@@ -123,12 +138,27 @@ export default function TellyCashPage() {
 
   function resetForm() {
     setEditingId(null);
+    setOriginalEntry(null);
     setQty({});
   }
 
-  // Loads an existing count back into the form so it can be corrected and
-  // re-saved. The stored systemBalance is shown as-is (rather than today's)
-  // so the difference you see is the one that was originally recorded.
+  // Cancel on an edit: restore the entry's original date/denominations so
+  // they stay visible, then exit edit mode.
+  function cancelEdit() {
+    if (originalEntry) {
+      setQty(qtyFromDenominations(originalEntry.denominations));
+      setDate(String(originalEntry.date).slice(0, 10));
+      setAccountCode(originalEntry.accountCode);
+      setSystemBalance(
+        typeof originalEntry.systemBalance === "number" ? originalEntry.systemBalance : null
+      );
+    } else {
+      setQty({});
+    }
+    setEditingId(null);
+    setOriginalEntry(null);
+  }
+
   async function handleEdit(entry: TellyEntry) {
     try {
       const res = await fetch(`/api/admin/telly-cash?id=${encodeURIComponent(entry._id)}`, {
@@ -139,16 +169,13 @@ export default function TellyCashPage() {
         Swal.fire({ icon: "error", title: "Could not load that count", text: data.message });
         return;
       }
-      const e = data.entry;
-      const nextQty: Record<number, string> = {};
-      for (const [k, v] of Object.entries(e.denominations || {})) {
-        nextQty[Number(k)] = String(v);
-      }
+      const e: TellyEntry = data.entry;
       setAccountCode(e.accountCode);
       setDate(String(e.date).slice(0, 10));
-      setQty(nextQty);
+      setQty(qtyFromDenominations(e.denominations));
       setSystemBalance(typeof e.systemBalance === "number" ? e.systemBalance : null);
       setEditingId(e._id);
+      setOriginalEntry(e);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch {
       Swal.fire({ icon: "error", title: "Could not load that count" });
@@ -176,8 +203,6 @@ export default function TellyCashPage() {
         Swal.fire({ icon: "error", title: "Could not delete", text: data.message });
         return;
       }
-      // If the entry being deleted is the one currently open in the form,
-      // clear the form so we don't leave a stale edit in progress.
       if (editingId === entry._id) resetForm();
       Swal.fire({ icon: "success", title: "Deleted", timer: 1200, showConfirmButton: false });
       setRefreshKey((k) => k + 1);
@@ -266,7 +291,6 @@ export default function TellyCashPage() {
                 accounts={accounts}
                 value={accountCode}
                 onChange={(code) => {
-                  // Switching accounts abandons any in-progress edit.
                   resetForm();
                   setAccountCode(code);
                 }}
@@ -316,6 +340,18 @@ export default function TellyCashPage() {
             </table>
           </div>
 
+          {/* Small helper: because the form now carries the previous count
+              forward, this lets the user deliberately start from zero. */}
+          <div className="flex justify-end mb-4">
+            <button
+              type="button"
+              onClick={() => setQty({})}
+              className="text-xs text-ink/50 hover:text-ink/80 underline"
+            >
+              Clear counts
+            </button>
+          </div>
+
           <div className="grid grid-cols-3 gap-4 text-sm bg-ink/[0.03] rounded-lg p-4 mb-5">
             <div>
               <p className="text-xs text-ink/50 uppercase tracking-wide mb-1">Counted</p>
@@ -351,7 +387,7 @@ export default function TellyCashPage() {
             </button>
             {editingId && (
               <button
-                onClick={resetForm}
+                onClick={cancelEdit}
                 disabled={saving}
                 className="px-5 py-2.5 rounded-lg border border-ink/15 text-ink/70 font-semibold hover:bg-ink/[0.04] transition-colors disabled:opacity-60"
               >
