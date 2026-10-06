@@ -51,11 +51,8 @@ function hslToHex(h: number, s: number, l: number): string {
 }
 
 // Returns a slice's color by index. The first 10 use the fixed, hand-picked
-// COLORS palette. Beyond that, instead of wrapping back around and repeating
-// a color already used elsewhere in the chart (which made slice #11 visually
-// merge into slice #1 once there were more than 10 categories), new hues are
-// generated using the golden-angle — this spaces them out evenly around the
-// color wheel so no two slices ever collide, no matter how many there are.
+// COLORS palette. Beyond that, new hues are generated using the golden-angle
+// so no two slices ever collide, no matter how many there are.
 function getColor(index: number): string {
   if (index < COLORS.length) return COLORS[index];
   const hue = (index * 137.508) % 360;
@@ -71,10 +68,14 @@ const CHART_HEIGHT = PIE_DIAMETER + 60;
 const OUTER_RADIUS = PIE_DIAMETER / 2 - 4;
 const RADIAN = Math.PI / 180;
 
+// Label layout: every slice gets a label. Labels on each side of the pie are
+// spread vertically so tiny neighbouring slices don't draw on top of each other.
+const LABEL_GAP = 16; // min vertical spacing between labels (px)
+const LABEL_RING = OUTER_RADIUS + 22; // radius of the elbow point
+const LABEL_LIMIT = CHART_HEIGHT / 2 - 10; // keep labels inside the chart area
+
 // Renders the hovered slice larger, with a brighter white outline and its
-// own drop shadow, so it visibly "pops" toward the viewer even when sitting
-// right next to another slice — the interactive stand-in for literal 3D
-// tilt, without distorting any slice's actual proportions.
+// own drop shadow, so it visibly "pops" toward the viewer.
 function renderActiveShape(props: any) {
   const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props;
   return (
@@ -93,6 +94,46 @@ function renderActiveShape(props: any) {
   );
 }
 
+// Computes each label's vertical offset (relative to the pie center) after
+// pushing neighbours apart on each side.
+function computeLabelOffsets(values: number[], total: number): number[] {
+  const offsets: number[] = new Array(values.length).fill(0);
+  const right: { i: number; dy: number }[] = [];
+  const left: { i: number; dy: number }[] = [];
+
+  // Recharts default: slices run counter-clockwise from 3 o'clock, and the
+  // label callback uses sin(-midAngle) for screen-y, so we mirror that here.
+  let cum = 0;
+  values.forEach((v, i) => {
+    const mid = ((cum + v / 2) / (total || 1)) * 360;
+    cum += v;
+    const item = { i, dy: LABEL_RING * Math.sin(-mid * RADIAN) };
+    (Math.cos(-mid * RADIAN) >= 0 ? right : left).push(item);
+  });
+
+  [right, left].forEach((side) => {
+    side.sort((a, b) => a.dy - b.dy);
+
+    // forward pass: push labels down so each is at least LABEL_GAP apart
+    let prev = -LABEL_LIMIT - LABEL_GAP;
+    side.forEach((s) => {
+      s.dy = Math.max(s.dy, prev + LABEL_GAP);
+      prev = s.dy;
+    });
+
+    // backward pass: pull labels up if we ran past the bottom limit
+    let next = LABEL_LIMIT + LABEL_GAP;
+    for (let k = side.length - 1; k >= 0; k--) {
+      side[k].dy = Math.min(side[k].dy, next - LABEL_GAP);
+      next = side[k].dy;
+    }
+
+    side.forEach((s) => (offsets[s.i] = s.dy));
+  });
+
+  return offsets;
+}
+
 export default function ExpensePieChart({ data }: ExpensePieChartProps) {
   const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined);
 
@@ -101,32 +142,39 @@ export default function ExpensePieChart({ data }: ExpensePieChartProps) {
   // own computed props (cx, cy, percent, value, ...) — if the entry itself
   // also had a field named "percent", that raw value (already 0-100 from
   // our API) would silently override recharts' own computed fraction
-  // (0-1), causing a double multiply-by-100 bug ("5286%" instead of
-  // "52.86%"). Percentages are calculated fresh from amount / total below
-  // instead, so there's no ambiguity.
+  // (0-1), causing a double multiply-by-100 bug. Percentages are calculated
+  // fresh from amount / total below instead.
   const total = data.reduce((s, d) => s + d.amount, 0);
   const chartData = data.map((d) => ({ name: d.description, value: d.amount }));
+  const labelDy = computeLabelOffsets(
+    chartData.map((d) => d.value),
+    total
+  );
 
   // Classic "leader line" label: a short line from the slice's edge out to
-  // an elbow, then a horizontal stub, with "01. Name XX.XX%" as one line of
-  // text at the end — the same style as Excel/PowerPoint pie charts, but
-  // with a serial number prefix (same index-based numbering as the
-  // Dashboard's Expense breakdown boxes) so a slice is easy to cross-reference.
+  // an elbow, then a line to the (de-overlapped) label position, with
+  // "01. Name XX.XX%" as one line of text at the end.
   function renderLabel(props: any) {
     const { cx, cy, midAngle, outerRadius, index } = props;
     const entry = chartData[index];
     const pct = total > 0 ? (entry.value / total) * 100 : 0;
-    if (pct < 1) return null; // skip slivers too small to label legibly
 
     const sin = Math.sin(-midAngle * RADIAN);
     const cos = Math.cos(-midAngle * RADIAN);
+    const dir = cos >= 0 ? 1 : -1;
+
     const sx = cx + outerRadius * cos;
     const sy = cy + outerRadius * sin;
     const mx = cx + (outerRadius + 22) * cos;
     const my = cy + (outerRadius + 22) * sin;
-    const ex = mx + (cos >= 0 ? 1 : -1) * 20;
-    const ey = my;
-    const textAnchor = cos >= 0 ? "start" : "end";
+
+    // adjusted label position (de-overlapped)
+    const ey = cy + labelDy[index];
+    const dyAbs = Math.abs(labelDy[index]);
+    const ringX = Math.sqrt(Math.max(0, LABEL_RING * LABEL_RING - dyAbs * dyAbs));
+    const ex = cx + dir * (Math.max(ringX, Math.abs(mx - cx)) + 20);
+
+    const textAnchor = dir === 1 ? "start" : "end";
     const color = getColor(index);
     const serial = String(index + 1).padStart(2, "0");
 
@@ -135,7 +183,7 @@ export default function ExpensePieChart({ data }: ExpensePieChartProps) {
         <path d={`M${sx},${sy}L${mx},${my}L${ex},${ey}`} stroke={color} fill="none" strokeWidth={1.5} />
         <circle cx={sx} cy={sy} r={2.5} fill={color} stroke="none" />
         <text
-          x={ex + (cos >= 0 ? 1 : -1) * 6}
+          x={ex + dir * 6}
           y={ey}
           textAnchor={textAnchor}
           dominantBaseline="central"
@@ -156,9 +204,7 @@ export default function ExpensePieChart({ data }: ExpensePieChartProps) {
         height: CHART_HEIGHT,
         maxWidth: CHART_WIDTH,
         margin: "0 auto",
-        // Soft ambient shadow under the whole pie for a lifted, "3D-styled"
-        // feel — CSS filter works reliably on SVG content, unlike the SVG
-        // <feDropShadow> approach which Recharts fights with internally.
+        // Soft ambient shadow under the whole pie for a lifted, "3D-styled" feel.
         filter: "drop-shadow(0 14px 22px rgba(0,0,0,0.14))",
       }}
     >
@@ -202,10 +248,8 @@ export default function ExpensePieChart({ data }: ExpensePieChartProps) {
       </ResponsiveContainer>
 
       {/* Recharts hardcodes `overflow: hidden` on its own inner .recharts-surface
-          <svg>, so the `style` prop above alone doesn't reach it — it lands on
-          a wrapping element instead. This forcibly overrides that inline style
-          so leader-line labels near the edge (e.g. the longest left-side
-          label) don't get clipped. */}
+          <svg>; this forcibly overrides it so leader-line labels near the edge
+          don't get clipped. */}
       <style jsx global>{`
         .recharts-wrapper,
         .recharts-surface {
