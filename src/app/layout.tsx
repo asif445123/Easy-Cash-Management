@@ -28,6 +28,11 @@ export const metadata: Metadata = {
     "EasyCash is a simple ledger for tracking income, expenses, and site payments — with admin-approved accounts to keep your books private.",
   keywords: ["cash ledger", "expense tracker", "income tracker", "site payments", "EasyCash"],
   applicationName: siteName,
+
+  verification: {
+    google: "7XniJcyvtP_kmPjzHiCQreIgxDm_blEkGLkCskk0oxM",
+  },
+  
   icons: {
     icon: [
       { url: "/favicon-16.png", sizes: "16x16", type: "image/png" },
