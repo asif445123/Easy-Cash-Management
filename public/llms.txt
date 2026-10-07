@@ -1,0 +1,60 @@
+# EasyCash
+
+> EasyCash is a simple cash management ledger for tracking income, expenses, and site payments — with admin-approved accounts to keep your books private.
+
+EasyCash is a Next.js web app for small businesses and individuals who want a
+straightforward ledger instead of spreadsheets. You record money in and money
+out (Cash Book, Journal Vouchers), organize accounts by type, track electricity
+bills and motorcycle fuel/mobile/tuning costs, and read the results through a
+set of built-in reports (trial balance, month/year-wise, receivable/payable,
+account ledger, and more). New accounts are approved by an admin before they
+can log in.
+
+The marketing pages, the login/register flow, and a full no-signup demo with
+sample data are public. The dashboard and all admin screens require an
+approved account and are excluded from crawling via robots.txt.
+
+## Public pages
+
+- [Home](https://easycash.example.com/): Landing page — what EasyCash does and who it is for.
+- [Log in](https://easycash.example.com/login): Sign in to an approved account.
+- [Register](https://easycash.example.com/register): Request an account (requires admin approval).
+- [Forgot password](https://easycash.example.com/forgot-password): Password reset by email.
+
+## Demo (no account required)
+
+- [Demo home](https://easycash.example.com/demo): Overview of the demo with sample data.
+- [Demo dashboard](https://easycash.example.com/demo/dashboard): Summary cards and recent transactions.
+- [Demo — Account Types](https://easycash.example.com/demo/account-types): Income/expense/cash-bank classification of account types.
+- [Demo — Accounts Master File](https://easycash.example.com/demo/accounts-master): Chart of accounts.
+- [Demo — Cash Book](https://easycash.example.com/demo/cash-book): Cash/bank receipts and payments.
+- [Demo — Journal Voucher](https://easycash.example.com/demo/journal-voucher): General journal entries.
+- [Demo — Electricity Bill](https://easycash.example.com/demo/electricity-bill): Meter readings and bills.
+- [Demo — Motorcycle](https://easycash.example.com/demo/motorcycle): Odometer readings and motorcycle costs.
+
+## Demo reports
+
+- [Accounts List](https://easycash.example.com/demo/reports/accounts-list): All accounts with balances.
+- [Cash / Bank Book](https://easycash.example.com/demo/reports/cash-bank-book): Combined cash book and journal voucher report.
+- [Account Ledger](https://easycash.example.com/demo/reports/account-ledger): Per-account transaction history.
+- [Journal Voucher Report](https://easycash.example.com/demo/reports/journal-voucher): All journal entries in a date range.
+- [Receivable / Payable](https://easycash.example.com/demo/reports/receivable-payable): Who owes you and whom you owe.
+- [Trial Balance (2 Column)](https://easycash.example.com/demo/reports/trial-balance-2): Debit/credit trial balance.
+- [Trial Balance (6 Column)](https://easycash.example.com/demo/reports/trial-balance-6): Extended trial balance with openings and adjustments.
+- [Month Wise Report](https://easycash.example.com/demo/reports/month-wise): Income/expense per month.
+- [Month Wise Comparison](https://easycash.example.com/demo/reports/month-comparison): Compare two months side by side.
+- [Year Wise Report](https://easycash.example.com/demo/reports/year-wise): Income/expense per year.
+- [Year Wise Comparison](https://easycash.example.com/demo/reports/year-comparison): Compare two years side by side.
+- [Electricity Bill Report](https://easycash.example.com/demo/reports/electricity-bill): Bills vs readings, cost per unit.
+- [Motorcycle Report](https://easycash.example.com/demo/reports/motorcycle): KM driven, fuel cost per KM, mobile/tuning spend vs limits.
+
+## Private areas (login required, not crawlable)
+
+- `/dashboard` — personal money-in/money-out summary.
+- `/admin/*` — account types, accounts, cash book, journal, electricity, motorcycle, and all reports for real (non-demo) data.
+- `/settings` — profile and password management.
+
+## Machine-readable files
+
+- [Sitemap](https://easycash.example.com/sitemap.xml): XML sitemap of all public pages.
+- [robots.txt](https://easycash.example.com/robots.txt): Crawler rules; disallows the private areas above.
