@@ -1,6 +1,6 @@
 import { MetadataRoute } from "next";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://easycash.example.com";
+import { siteUrl } from "@/lib/seo";
 
 type ChangeFrequency = NonNullable<
   MetadataRoute.Sitemap[number]["changeFrequency"]
@@ -12,14 +12,12 @@ interface PublicRoute {
   priority: number;
 }
 
-// Public, crawlable pages only. Auth-protected areas (/dashboard, /admin/*),
-// the API (/api/*), /settings, and token-based /reset-password/* are
-// intentionally excluded — they are disallowed in robots.ts.
+// Public, indexable pages only. Auth-protected areas (/dashboard, /admin/*),
+// the API (/api/*), /settings, and token-based /reset-password/* are excluded
+// (disallowed in robots.ts). /login, /register and /forgot-password are
+// noindex pages (see their layouts), so they are excluded here too.
 const publicRoutes: PublicRoute[] = [
   { path: "", changeFrequency: "weekly", priority: 1 },
-  { path: "/login", changeFrequency: "monthly", priority: 0.8 },
-  { path: "/register", changeFrequency: "monthly", priority: 0.8 },
-  { path: "/forgot-password", changeFrequency: "monthly", priority: 0.5 },
 
   // Demo — no account required
   { path: "/demo", changeFrequency: "weekly", priority: 0.9 },
