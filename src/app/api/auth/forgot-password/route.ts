@@ -30,16 +30,25 @@ export async function POST(req: NextRequest) {
     user.resetTokenExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
     await user.save();
 
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+    // Prefer the configured public URL in production, but use the current
+    // request origin locally so links do not accidentally point at localhost.
+    const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || req.nextUrl.origin).replace(/\/$/, "");
     const resetUrl = `${siteUrl}/reset-password/${rawToken}`;
 
     try {
       await sendResetEmail(user.email, resetUrl);
     } catch (mailErr) {
-      // Log the FULL error server-side so the real cause (bad SMTP creds,
-      // missing env vars, Gmail auth rejection, etc.) is visible in your
-      // terminal — but the browser still only ever sees the generic message.
+      // Do not leave a valid reset token behind when no email was sent.
+      user.resetTokenHash = undefined;
+      user.resetTokenExpires = undefined;
+      await user.save().catch((cleanupErr: unknown) =>
+        console.error("Failed to clean up reset token after email error:", cleanupErr)
+      );
       console.error("Failed to send reset email:", mailErr);
+      return NextResponse.json(
+        { message: "We couldn't send the reset email right now. Please try again later." },
+        { status: 503 }
+      );
     }
 
     return NextResponse.json({ message: GENERIC_MESSAGE });
