@@ -1,8 +1,62 @@
 import Link from "next/link";
+import type { Metadata } from "next";
+import { buildPageMetadata, DEFAULT_TITLE, JsonLd, siteName, siteUrl, OG_IMAGE_PATH } from "@/lib/seo";
+
+const homeDescription =
+  "EasyCash is a simple cash book and ledger for tracking income, expenses, and site payments. Every account is admin-approved, and you can explore a demo with sample data without signing up.";
+
+export const metadata: Metadata = {
+  ...buildPageMetadata({
+    title: DEFAULT_TITLE,
+    description: homeDescription,
+    path: "/",
+  }),
+  title: { absolute: DEFAULT_TITLE },
+};
+
+const homeJsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": `${siteUrl}/#organization`,
+      name: siteName,
+      url: `${siteUrl}/`,
+      logo: { "@type": "ImageObject", url: `${siteUrl}/icon-512.png`, width: 512, height: 512 },
+    },
+    {
+      "@type": "WebSite",
+      "@id": `${siteUrl}/#website`,
+      name: siteName,
+      url: `${siteUrl}/`,
+      inLanguage: "en",
+      publisher: { "@id": `${siteUrl}/#organization` },
+    },
+    {
+      "@type": "WebPage",
+      "@id": `${siteUrl}/#webpage`,
+      url: `${siteUrl}/`,
+      name: DEFAULT_TITLE,
+      description: homeDescription,
+      isPartOf: { "@id": `${siteUrl}/#website` },
+      about: { "@id": `${siteUrl}/#organization` },
+      primaryImageOfPage: { "@type": "ImageObject", url: `${siteUrl}${OG_IMAGE_PATH}` },
+    },
+    {
+      "@type": "SoftwareApplication",
+      name: siteName,
+      url: `${siteUrl}/`,
+      applicationCategory: "FinanceApplication",
+      operatingSystem: "Web",
+      description: homeDescription,
+    },
+  ],
+};
 
 export default function HomePage() {
   return (
     <main className="min-h-screen bg-paper flex flex-col">
+      <JsonLd data={homeJsonLd} />
       <header className="max-w-5xl mx-auto w-full px-6 py-6 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-accent font-display font-bold">
