@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Space_Grotesk, Inter } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import WhatsAppButton from "@/components/WhatsAppButton";
@@ -72,6 +73,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="font-body antialiased">
         <AuthProvider>{children}</AuthProvider>
         <WhatsAppButton />
+        <Analytics />
       </body>
     </html>
   );
