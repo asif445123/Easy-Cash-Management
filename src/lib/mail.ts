@@ -17,6 +17,10 @@ function getTransporter() {
 
   const port = Number(SMTP_PORT) || 465;
 
+  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+    throw new Error("SMTP_PORT must be a valid port number.");
+  }
+
   return nodemailer.createTransport({
     host: SMTP_HOST,
     port,
@@ -30,10 +34,11 @@ export async function sendResetEmail(to: string, resetUrl: string) {
   const siteName = process.env.NEXT_PUBLIC_SITE_NAME || "EasyCash";
 
   try {
-    await transporter.sendMail({
-      from: `"${siteName}" <${process.env.SMTP_USER}>`,
+    const info = await transporter.sendMail({
+      from: `"${siteName}" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
       to,
       subject: `Reset your ${siteName} password`,
+      text: `Reset your ${siteName} password using this link (valid for 1 hour):\n\n${resetUrl}\n\nIf you didn't request this, you can ignore this email.`,
       html: `
         <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
           <h2>Reset your password</h2>
@@ -47,6 +52,16 @@ export async function sendResetEmail(to: string, resetUrl: string) {
         </div>
       `,
     });
+
+    // Some SMTP servers accept the connection but reject an individual
+    // recipient without throwing. Treat that as a failed delivery attempt.
+    const recipientAccepted = info.accepted.some((address) => {
+      const acceptedAddress = typeof address === "string" ? address : address.address;
+      return acceptedAddress.toLowerCase() === to.toLowerCase();
+    });
+    if (!recipientAccepted) {
+      throw new Error(`SMTP server rejected the reset-email recipient (${info.response}).`);
+    }
   } catch (err) {
     // Re-throw with more context so it's obvious in server logs what failed —
     // e.g. "Invalid login: 535-5.7.8 Username and Password not accepted"

@@ -26,6 +26,7 @@ export default function DemoPage() {
 
   return (
     <main className="min-h-screen bg-paper">
+      <h1 className="sr-only">EasyCash demo with sample data</h1>
       <header className="max-w-5xl mx-auto px-6 py-6 flex items-center justify-between flex-wrap gap-4">
         <Link href="/" className="flex items-center gap-2">
           <span className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-accent font-display font-bold">

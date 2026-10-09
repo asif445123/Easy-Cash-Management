@@ -16,8 +16,7 @@ const inter = Inter({
   display: "swap",
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://easycash.example.com";
-const siteName = process.env.NEXT_PUBLIC_SITE_NAME || "EasyCash";
+import { siteUrl, siteName, OG_IMAGE_PATH } from "@/lib/seo";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -52,14 +51,14 @@ export const metadata: Metadata = {
     title: `${siteName} — Track money in and out, without the guesswork`,
     description:
       "A simple, approval-gated ledger for tracking income, expenses, and site payments.",
-    images: [{ url: "/icon-512.png", width: 512, height: 512, alt: siteName }],
+    images: [{ url: OG_IMAGE_PATH, width: 1200, height: 630, alt: siteName }],
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: `${siteName} — Track money in and out, without the guesswork`,
     description:
       "A simple, approval-gated ledger for tracking income, expenses, and site payments.",
-    images: ["/icon-512.png"],
+    images: [OG_IMAGE_PATH],
   },
   robots: {
     index: true,
