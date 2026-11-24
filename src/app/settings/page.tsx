@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import Swal from "sweetalert2";
 import { useAuth } from "@/context/AuthContext";
 import PasswordInput from "@/components/PasswordInput";
@@ -82,18 +81,6 @@ export default function SettingsPage() {
 
   return (
     <main className="min-h-screen bg-paper">
-      <header className="max-w-3xl mx-auto px-6 py-6 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-accent font-display font-bold">
-            ₨
-          </span>
-          <span className="font-display font-semibold text-lg tracking-tight">EasyCash</span>
-        </div>
-        <Link href="/dashboard" className="text-sm text-ink/70 hover:text-ink transition-colors">
-          Back to dashboard
-        </Link>
-      </header>
-
       <div className="max-w-3xl mx-auto px-6 pb-16 space-y-8">
         <h1 className="font-display text-2xl font-bold text-ink">Account settings</h1>
 

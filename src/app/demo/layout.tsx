@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { buildPageMetadata, siteName } from "@/lib/seo";
+import DemoShell from "@/components/demo/DemoShell";
 
 // Shared demo metadata. Each /demo/* route has its own layout.tsx that
 // overrides title, description, canonical and Open Graph.
@@ -18,5 +19,5 @@ export const metadata: Metadata = {
 };
 
 export default function DemoLayout({ children }: { children: React.ReactNode }) {
-  return children;
+  return <DemoShell>{children}</DemoShell>;
 }
