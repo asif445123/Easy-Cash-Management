@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import Swal from "sweetalert2";
 import { FaPen, FaTrash } from "react-icons/fa";
 import { safeJson } from "@/lib/api-client";
@@ -179,7 +180,15 @@ export default function AccountsMasterPage() {
       <AdminHeader />
 
       <div className="max-w-4xl mx-auto px-6 pb-16">
-        <h1 className="font-display text-2xl font-bold text-ink mb-6">Accounts Master File</h1>
+        <div className="flex items-center justify-between gap-3 flex-wrap mb-6">
+          <h1 className="font-display text-2xl font-bold text-ink">Accounts Master File</h1>
+          <Link
+            href="/admin/chart-of-accounts"
+            className="px-4 py-2 rounded-lg border border-ink/15 text-sm font-semibold text-ink hover:bg-ink/5 transition-colors"
+          >
+            View Chart of Accounts
+          </Link>
+        </div>
 
         <form
           onSubmit={handleSubmit}
