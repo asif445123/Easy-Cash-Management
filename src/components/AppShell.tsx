@@ -7,16 +7,18 @@ import Swal from "sweetalert2";
 import { FaBars, FaChevronDown, FaTimes } from "react-icons/fa";
 import { useAuth } from "@/context/AuthContext";
 import ContactUsModal from "@/components/ContactUsModal";
+import UserMenu from "@/components/UserMenu";
 import {
   AccountTypesIcon,
   AccountsMasterIcon,
   CashBookIcon,
+  ChartOfAccountsIcon,
   ContactIcon,
   DashboardIcon,
   ElectricityIcon,
-  InventoryIcon,
   JournalVoucherIcon,
   LogoutIcon,
+  ManageAccountsIcon,
   MotorcycleIcon,
   ReportItemIcon,
   ReportsIcon,
@@ -25,9 +27,14 @@ import {
   UserApprovalsIcon,
 } from "@/components/SidebarIcons";
 
-const ENTRY_NAV = [
+// "Manage Accounts" sub-links: the setup screens for the chart of accounts.
+const MANAGE_NAV = [
   { href: "/admin/account-types", label: "Account Types", icon: AccountTypesIcon },
   { href: "/admin/accounts", label: "Accounts Master File", icon: AccountsMasterIcon },
+  { href: "/admin/chart-of-accounts", label: "Chart of Accounts", icon: ChartOfAccountsIcon },
+];
+
+const ENTRY_NAV = [
   { href: "/admin/cashbook", label: "Cash Book", icon: CashBookIcon },
   { href: "/admin/telly-cash", label: "Telly Cash", icon: TellyCashIcon },
   { href: "/admin/journal", label: "Journal Voucher", icon: JournalVoucherIcon },
@@ -66,7 +73,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const isAdmin = user?.role === "admin";
 
   const onReportRoute = pathname.startsWith("/admin/reports");
+  const onManageRoute = MANAGE_NAV.some((link) => pathname === link.href);
   const [reportsOpen, setReportsOpen] = useState(onReportRoute);
+  const [manageOpen, setManageOpen] = useState(onManageRoute);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
 
@@ -74,6 +83,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (pathname.startsWith("/admin/reports")) {
       setReportsOpen(true);
+    }
+    if (MANAGE_NAV.some((link) => pathname === link.href)) {
+      setManageOpen(true);
     }
     setMobileOpen(false);
   }, [pathname]);
@@ -158,6 +170,54 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           );
         })}
 
+        {/* Expandable Manage Accounts section */}
+        <div>
+          <button
+            type="button"
+            onClick={() => setManageOpen((o) => !o)}
+            aria-expanded={manageOpen}
+            className={`flex items-center justify-between w-full px-4 py-2.5 text-sm transition-colors ${
+              onManageRoute && !manageOpen
+                ? "bg-[#2563EB] text-white font-medium"
+                : "text-slate-200 hover:bg-white/[0.08] hover:text-white"
+            }`}
+          >
+            <span className="flex items-center gap-3 min-w-0">
+              <ManageAccountsIcon className="w-5 h-5 shrink-0" />
+              <span className="truncate">Manage Accounts</span>
+            </span>
+            <FaChevronDown
+              size={11}
+              className={`shrink-0 text-slate-400 transition-transform duration-200 ${
+                manageOpen ? "rotate-180 text-white" : ""
+              }`}
+            />
+          </button>
+
+          {manageOpen && (
+            <div className="bg-[#0B1120] py-1 border-y border-white/5">
+              {MANAGE_NAV.map((link) => {
+                const active = isActive(link.href, true);
+                const Icon = link.icon;
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={`flex items-center gap-2.5 pl-8 pr-4 py-2 text-[13px] transition-colors ${
+                      active
+                        ? "bg-[#2563EB] text-white font-medium"
+                        : "text-slate-300 hover:bg-white/[0.07] hover:text-white"
+                    }`}
+                  >
+                    <Icon className="w-4 h-4 shrink-0" />
+                    <span className="truncate">{link.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
         {/* Expandable Reports section */}
         <div>
           <button
@@ -204,13 +264,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             </div>
           )}
         </div>
-
-        {isAdmin && (
-          <Link href="/admin/items" className={linkClass(isActive("/admin/items"))}>
-            <InventoryIcon className="w-5 h-5 shrink-0" />
-            <span className="truncate">Inventory items</span>
-          </Link>
-        )}
 
         {isAdmin && (
           <Link href="/admin" className={linkClass(isActive("/admin", true))}>
@@ -292,15 +345,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           </Link>
         </div>
 
-        {user && (
-          <Link
-            href="/settings"
-            aria-label="Account settings"
-            className="w-8 h-8 rounded-full bg-primary text-white text-xs font-semibold flex items-center justify-center shrink-0"
-          >
-            {getInitials(user.name)}
-          </Link>
-        )}
+        {user && <UserMenu variant="dark" />}
       </header>
 
       {/* Mobile drawer overlay */}
@@ -319,6 +364,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Main content area offset by sidebar width on desktop */}
       <div className="lg:pl-64 print:pl-0 min-h-screen">
+        {/* Desktop top bar: account dropdown with Logout lives here */}
+        <header className="hidden lg:flex sticky top-0 z-20 h-14 items-center justify-end gap-3 px-6 bg-paper/90 backdrop-blur border-b border-ink/10 print:hidden">
+          <UserMenu />
+        </header>
+
         <div className="pt-6 print:pt-0">{children}</div>
       </div>
 

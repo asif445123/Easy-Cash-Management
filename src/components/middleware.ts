@@ -16,12 +16,11 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
-  // Only these /admin/* paths are restricted to actual admins — everyone
-  // else under /admin/* (account types, accounts, cash book, journal
+  // Only /admin itself (the User approvals screen) is admin-only — every
+  // other /admin/* path (account types, accounts, cash book, journal
   // vouchers, reports) just needs an approved account, since regular
   // approved users use those screens too.
-  const ADMIN_ONLY_PATHS = ["/admin/items"];
-  const isAdminOnlyPath = pathname === "/admin" || ADMIN_ONLY_PATHS.some((p) => pathname.startsWith(p));
+  const isAdminOnlyPath = pathname === "/admin";
 
   if (isAdminOnlyPath && !isAdmin) {
     return NextResponse.redirect(new URL("/login", req.url));

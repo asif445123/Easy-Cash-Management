@@ -9,19 +9,25 @@ import {
   AccountTypesIcon,
   AccountsMasterIcon,
   CashBookIcon,
+  ChartOfAccountsIcon,
   DashboardIcon,
   ElectricityIcon,
   JournalVoucherIcon,
   LogoutIcon,
+  ManageAccountsIcon,
   MotorcycleIcon,
   ReportItemIcon,
   ReportsIcon,
   UserApprovalsIcon,
 } from "@/components/SidebarIcons";
 
-const DEMO_ENTRY_NAV = [
+const DEMO_MANAGE_NAV = [
   { href: "/demo/account-types", label: "Account Types", icon: AccountTypesIcon },
   { href: "/demo/accounts-master", label: "Accounts Master File", icon: AccountsMasterIcon },
+  { href: "/demo/chart-of-accounts", label: "Chart of Accounts", icon: ChartOfAccountsIcon },
+];
+
+const DEMO_ENTRY_NAV = [
   { href: "/demo/cash-book", label: "Cash Book", icon: CashBookIcon },
   { href: "/demo/journal-voucher", label: "Journal Voucher", icon: JournalVoucherIcon },
   { href: "/demo/motorcycle", label: "Motorcycle", icon: MotorcycleIcon },
@@ -49,12 +55,17 @@ export default function DemoShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   const onReportRoute = pathname.startsWith("/demo/reports");
+  const onManageRoute = DEMO_MANAGE_NAV.some((link) => pathname === link.href);
   const [reportsOpen, setReportsOpen] = useState(onReportRoute);
+  const [manageOpen, setManageOpen] = useState(onManageRoute);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     if (pathname.startsWith("/demo/reports")) {
       setReportsOpen(true);
+    }
+    if (DEMO_MANAGE_NAV.some((link) => pathname === link.href)) {
+      setManageOpen(true);
     }
     setMobileOpen(false);
   }, [pathname]);
@@ -144,6 +155,53 @@ export default function DemoShell({ children }: { children: React.ReactNode }) {
             </Link>
           );
         })}
+
+        <div>
+          <button
+            type="button"
+            onClick={() => setManageOpen((o) => !o)}
+            aria-expanded={manageOpen}
+            className={`flex items-center justify-between w-full px-4 py-2.5 text-sm transition-colors ${
+              onManageRoute && !manageOpen
+                ? "bg-[#2563EB] text-white font-medium"
+                : "text-slate-200 hover:bg-white/[0.08] hover:text-white"
+            }`}
+          >
+            <span className="flex items-center gap-3 min-w-0">
+              <ManageAccountsIcon className="w-5 h-5 shrink-0" />
+              <span className="truncate">Manage Accounts</span>
+            </span>
+            <FaChevronDown
+              size={11}
+              className={`shrink-0 text-slate-400 transition-transform duration-200 ${
+                manageOpen ? "rotate-180 text-white" : ""
+              }`}
+            />
+          </button>
+
+          {manageOpen && (
+            <div className="bg-[#0B1120] py-1 border-y border-white/5">
+              {DEMO_MANAGE_NAV.map((link) => {
+                const active = isActive(link.href, true);
+                const Icon = link.icon;
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={`flex items-center gap-2.5 pl-8 pr-4 py-2 text-[13px] transition-colors ${
+                      active
+                        ? "bg-[#2563EB] text-white font-medium"
+                        : "text-slate-300 hover:bg-white/[0.07] hover:text-white"
+                    }`}
+                  >
+                    <Icon className="w-4 h-4 shrink-0" />
+                    <span className="truncate">{link.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </div>
 
         <div>
           <button
