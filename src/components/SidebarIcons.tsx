@@ -123,14 +123,29 @@ export function ReportsIcon({ className = "w-5 h-5" }: IconProps) {
   );
 }
 
-/** Colorful cardboard box — Inventory Items */
-export function InventoryIcon({ className = "w-5 h-5" }: IconProps) {
+/** Colorful folder with a gear badge — Manage Accounts */
+export function ManageAccountsIcon({ className = "w-5 h-5" }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" className={className} fill="none" aria-hidden="true">
-      <path d="M12 3 3.5 7.2v9.6L12 21l8.5-4.2V7.2L12 3Z" fill="#D97706" />
-      <path d="M12 3 3.5 7.2 12 11.4l8.5-4.2L12 3Z" fill="#FCD34D" />
-      <path d="M12 11.4V21l8.5-4.2V7.2L12 11.4Z" fill="#B45309" />
-      <path d="M8.5 5.1 17 9.3v2.5l-2.5-1.2V8.2L6.2 4.1" fill="#FEF3C7" opacity="0.8" />
+      <path d="M3 6.5A2.5 2.5 0 0 1 5.5 4H9.6l1.7 2H18.5A2.5 2.5 0 0 1 21 8.5v9A2.5 2.5 0 0 1 18.5 20h-13A2.5 2.5 0 0 1 3 17.5v-11Z" fill="#0EA5E9" />
+      <path d="M3 9h18v8.5A2.5 2.5 0 0 1 18.5 20h-13A2.5 2.5 0 0 1 3 17.5V9Z" fill="#38BDF8" />
+      <rect x="6.5" y="12.5" width="7" height="1.8" rx="0.9" fill="#E0F2FE" />
+      <rect x="6.5" y="15.6" width="5" height="1.8" rx="0.9" fill="#E0F2FE" />
+      <circle cx="17.5" cy="14.5" r="4.5" fill="#F59E0B" />
+      <path d="M17.5 12.4v1M17.5 15.6v1M15.8 13.5l.9.5M18.3 15l.9.5M19.2 13.5l-.9.5M16.7 15l-.9.5" stroke="#FFFFFF" strokeWidth="1.1" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+/** Colorful hierarchy / org chart — Chart of Accounts */
+export function ChartOfAccountsIcon({ className = "w-5 h-5" }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" aria-hidden="true">
+      <rect x="8.5" y="2.5" width="7" height="5" rx="1.5" fill="#4F46E5" />
+      <rect x="2.5" y="16.5" width="7" height="5" rx="1.5" fill="#22C55E" />
+      <rect x="14.5" y="16.5" width="7" height="5" rx="1.5" fill="#F59E0B" />
+      <path d="M12 7.5v4M5.5 16.5v-2.5h13v2.5" stroke="#94A3B8" strokeWidth="1.6" strokeLinecap="round" />
+      <path d="M5.5 14h13" stroke="#94A3B8" strokeWidth="1.6" strokeLinecap="round" />
     </svg>
   );
 }

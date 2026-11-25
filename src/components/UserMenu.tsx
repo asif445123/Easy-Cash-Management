@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Swal from "sweetalert2";
-import { FaCog, FaSignOutAlt } from "react-icons/fa";
+import { FaSignOutAlt } from "react-icons/fa";
 import { useAuth } from "@/context/AuthContext";
 
 /** "Rana Asif" -> "RA". Falls back to the first letter, or "?" if no name. */
@@ -16,8 +15,17 @@ function getInitials(name?: string): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-/** Avatar circle (showing the user's initials) that opens a dropdown with Settings and Logout. */
-export default function UserMenu() {
+interface UserMenuProps {
+  /** "dark" is for the dark mobile top bar; "light" (default) for page headers. */
+  variant?: "light" | "dark";
+}
+
+/**
+ * Avatar that opens the account dropdown: the signed-in name and email, and
+ * Logout — nothing else. Settings already has its own sidebar link, and the
+ * dropdown intentionally carries no language switcher.
+ */
+export default function UserMenu({ variant = "light" }: UserMenuProps) {
   const { user, logout } = useAuth();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -50,41 +58,51 @@ export default function UserMenu() {
 
   if (!user) return null;
 
+  const onDark = variant === "dark";
+
   return (
     <div className="relative" ref={ref}>
       <button
+        type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-2 text-ink/80 hover:text-ink transition-colors"
+        aria-haspopup="menu"
+        aria-expanded={open}
         aria-label="Account menu"
+        className={`flex items-center gap-2 rounded-full transition-colors ${
+          onDark ? "text-white" : "text-ink/80 hover:text-ink"
+        }`}
       >
         <span
-          className="w-7 h-7 rounded-full bg-primary text-white text-xs font-semibold flex items-center justify-center shrink-0"
+          className={`rounded-full bg-primary text-white text-xs font-semibold flex items-center justify-center shrink-0 ${
+            onDark ? "w-8 h-8" : "w-8 h-8 ring-2 ring-primary/15"
+          }`}
           aria-hidden="true"
         >
           {getInitials(user.name)}
         </span>
-        <span className="text-sm hidden sm:inline">{user.name}</span>
+        <span className={`text-sm hidden sm:inline ${onDark ? "text-white" : "text-ink"}`}>
+          {user.name}
+        </span>
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl border border-ink/10 shadow-lg py-1 z-20">
-          <div className="px-4 py-2 border-b border-ink/5">
-            <p className="text-sm font-medium text-ink truncate">{user.name}</p>
+        <div
+          role="menu"
+          className="absolute right-0 mt-2 w-60 bg-white rounded-xl border border-ink/10 shadow-xl overflow-hidden z-40"
+        >
+          {/* Signed-in identity, exactly like the reference dropdown */}
+          <div className="px-4 py-3 border-b border-ink/10 bg-ink/[0.02]">
+            <p className="text-sm font-bold text-ink truncate">{user.name}</p>
             <p className="text-xs text-ink/50 truncate">{user.email}</p>
           </div>
-          <Link
-            href="/settings"
-            onClick={() => setOpen(false)}
-            className="flex items-center gap-2 px-4 py-2 text-sm text-ink/80 hover:bg-ink/5 transition-colors"
-          >
-            <FaCog size={14} />
-            Settings
-          </Link>
+
           <button
+            type="button"
+            role="menuitem"
             onClick={handleLogout}
-            className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-danger hover:bg-danger/5 transition-colors"
+            className="flex items-center gap-2.5 w-full text-left px-4 py-3 text-sm font-medium text-danger hover:bg-danger/[0.07] transition-colors"
           >
-            <FaSignOutAlt size={14} />
+            <FaSignOutAlt size={14} className="shrink-0" />
             Logout
           </button>
         </div>

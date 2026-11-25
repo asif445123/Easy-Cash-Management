@@ -5,12 +5,16 @@ export interface DemoNavItem {
 
 // Drop these into your header wherever <DemoMenu items={...} /> is rendered.
 export const demoAddEntryItems: DemoNavItem[] = [
-  { label: "Account Types", href: "/demo/account-types" },
-  { label: "Accounts Master File", href: "/demo/accounts-master" },
   { label: "Cash Book", href: "/demo/cash-book" },
   { label: "Journal Voucher", href: "/demo/journal-voucher" },
   { label: "Motorcycle", href: "/demo/motorcycle" },
   { label: "Electricity Bill", href: "/demo/electricity-bill" },
+];
+
+export const demoManageAccountItems: DemoNavItem[] = [
+  { label: "Account Types", href: "/demo/account-types" },
+  { label: "Accounts Master File", href: "/demo/accounts-master" },
+  { label: "Chart of Accounts", href: "/demo/chart-of-accounts" },
 ];
 
 export const demoReportItems: DemoNavItem[] = [
