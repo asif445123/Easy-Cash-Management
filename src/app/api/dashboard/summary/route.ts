@@ -6,6 +6,7 @@ import Account from "@/models/Account";
 import AccountType from "@/models/AccountType";
 import TellyCash from "@/models/TellyCash";
 import { getAccountBalance, getAccountMovements } from "@/lib/ledger";
+import { calculateDailyAverages, countSelectedDays } from "@/lib/dashboardAverages";
 
 function firstOfMonth() {
   const d = new Date();
@@ -60,8 +61,18 @@ export async function GET(req: NextRequest) {
   const params = req.nextUrl.searchParams;
   const fromParam = params.get("from");
   const toParam = params.get("to");
-  const fromDate = fromParam ? new Date(fromParam) : firstOfMonth();
-  const toDate = toParam ? new Date(toParam) : new Date();
+  const parsedFrom = fromParam ? new Date(fromParam) : null;
+  const parsedTo = toParam ? new Date(toParam) : null;
+  const hasValidFrom = parsedFrom !== null && !Number.isNaN(parsedFrom.getTime());
+  const hasValidTo = parsedTo !== null && !Number.isNaN(parsedTo.getTime());
+  const fromDate = hasValidFrom ? parsedFrom : firstOfMonth();
+  const toDate = hasValidTo ? parsedTo : new Date();
+  const selectedDays = countSelectedDays(
+    hasValidFrom ? fromParam : null,
+    hasValidTo ? toParam : null,
+    fromDate,
+    toDate
+  );
 
   try {
     await connectDB();
@@ -101,6 +112,9 @@ export async function GET(req: NextRequest) {
         balance: 0,
         income: 0,
         expense: 0,
+        selectedDays,
+        averageIncomePerDay: 0,
+        averageExpensePerDay: 0,
         cashBankAccounts: [],
         expenseBreakdown: [],
         recentTransactions: [],
@@ -233,7 +247,23 @@ export async function GET(req: NextRequest) {
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
       .slice(0, 8);
 
-    return NextResponse.json({ balance, income, expense, cashBankAccounts, expenseBreakdown, recentTransactions });
+    const { averageIncomePerDay, averageExpensePerDay } = calculateDailyAverages(
+      income,
+      expense,
+      selectedDays
+    );
+
+    return NextResponse.json({
+      balance,
+      income,
+      expense,
+      selectedDays,
+      averageIncomePerDay,
+      averageExpensePerDay,
+      cashBankAccounts,
+      expenseBreakdown,
+      recentTransactions,
+    });
   } catch (err) {
     return handleApiError(err);
   }
