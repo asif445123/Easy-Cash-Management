@@ -257,6 +257,7 @@ export const demoYearComparison = {
 export const demoDashboard = {
   from: "31-Jul-2026",
   to: "17-Aug-2026",
+  selectedDays: 18,
   balance: 43739,
   income: 50000,
   expense: 32264,
