@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import AdminHeader from "@/components/AdminHeader";
 import ExpensePieChart from "@/components/ExpensePieChart";
+import { calculateDailyAverages, countSelectedDays } from "@/lib/dashboardAverages";
 
 interface Transaction {
   id: string;
@@ -35,6 +36,9 @@ interface Summary {
   balance: number;
   income: number;
   expense: number;
+  selectedDays?: number;
+  averageIncomePerDay?: number;
+  averageExpensePerDay?: number;
   cashBankAccounts: CashBankAccount[];
   expenseBreakdown: ExpenseBreakdownItem[];
   recentTransactions: Transaction[];
@@ -88,10 +92,12 @@ export default function DashboardPage() {
   const [to, setTo] = useState(() => toLocalDateStr(new Date()));
 
   useEffect(() => {
+    let cancelled = false;
     async function loadSummary() {
       setLoadingSummary(true);
       try {
         const res = await fetch(`/api/dashboard/summary?from=${from}&to=${to}`, { cache: "no-store" });
+        if (cancelled) return;
         if (res.ok) {
           const data = await res.json();
           setSummary(data);
@@ -99,13 +105,32 @@ export default function DashboardPage() {
           setSummary(emptySummary);
         }
       } catch {
-        setSummary(emptySummary);
+        if (!cancelled) setSummary(emptySummary);
       } finally {
-        setLoadingSummary(false);
+        if (!cancelled) setLoadingSummary(false);
       }
     }
     loadSummary();
+    return () => {
+      cancelled = true;
+    };
   }, [from, to]);
+
+  const fallbackDays = countSelectedDays(from, to);
+  const selectedDays =
+    typeof summary.selectedDays === "number" && summary.selectedDays >= 1
+      ? summary.selectedDays
+      : fallbackDays;
+  const fallbackAverages = calculateDailyAverages(summary.income, summary.expense, selectedDays);
+  const averageIncomePerDay =
+    typeof summary.averageIncomePerDay === "number"
+      ? summary.averageIncomePerDay
+      : fallbackAverages.averageIncomePerDay;
+  const averageExpensePerDay =
+    typeof summary.averageExpensePerDay === "number"
+      ? summary.averageExpensePerDay
+      : fallbackAverages.averageExpensePerDay;
+  const daysLabel = `${selectedDays} ${selectedDays === 1 ? "day" : "days"}`;
 
   if (authLoading) {
     return <div className="min-h-screen flex items-center justify-center text-ink/50">Loading…</div>;
@@ -143,6 +168,25 @@ export default function DashboardPage() {
           {!loadingSummary &&
             summary.cashBankAccounts.map((a) => <CashAccountCard key={a.code} account={a} />)}
           <StatCard label="Balance" value={summary.balance} tone="primary" loading={loadingSummary} />
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+          <StatCard
+            label="Average Income Per Day"
+            value={averageIncomePerDay}
+            tone="primary"
+            loading={loadingSummary}
+            maximumFractionDigits={2}
+            subtitle={loadingSummary ? undefined : `Rs ${summary.income.toLocaleString()} ÷ ${daysLabel}`}
+          />
+          <StatCard
+            label="Average Expenses Per Day"
+            value={averageExpensePerDay}
+            tone="danger"
+            loading={loadingSummary}
+            maximumFractionDigits={2}
+            subtitle={loadingSummary ? undefined : `Rs ${summary.expense.toLocaleString()} ÷ ${daysLabel}`}
+          />
         </div>
 
         {!loadingSummary && summary.expenseBreakdown.length > 0 && (
@@ -291,19 +335,28 @@ function StatCard({
   value,
   tone,
   loading,
+  maximumFractionDigits,
+  subtitle,
 }: {
   label: string;
   value: number;
   tone: "ink" | "primary" | "danger";
   loading: boolean;
+  maximumFractionDigits?: number;
+  subtitle?: string;
 }) {
   const toneClass = tone === "primary" ? "text-primary" : tone === "danger" ? "text-danger" : "text-ink";
+  const formattedValue =
+    maximumFractionDigits !== undefined
+      ? value.toLocaleString(undefined, { maximumFractionDigits })
+      : value.toLocaleString();
   return (
     <div className="bg-white rounded-2xl border border-ink/10 p-5">
       <p className="text-xs uppercase tracking-widest text-ink/40 mb-1">{label}</p>
       <p className={`font-display text-2xl font-bold ${toneClass}`}>
-        {loading ? "…" : `Rs ${value.toLocaleString()}`}
+        {loading ? "…" : `Rs ${formattedValue}`}
       </p>
+      {subtitle && <p className="text-xs text-ink/40 mt-1">{subtitle}</p>}
     </div>
   );
 }

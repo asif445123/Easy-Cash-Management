@@ -7,9 +7,16 @@ import DemoTable from "@/components/demo/DemoTable";
 import ExpensePieChart from "@/components/demo/ExpensePieChart";
 import { demoDashboard } from "@/lib/demoData";
 import { fmtRs } from "@/lib/demoFormat";
+import { calculateDailyAverages } from "@/lib/dashboardAverages";
 
 export default function DemoDashboardPage() {
   const d = demoDashboard;
+  const { selectedDays, averageIncomePerDay, averageExpensePerDay } = calculateDailyAverages(
+    d.income,
+    d.expense,
+    d.selectedDays
+  );
+  const daysLabel = `${selectedDays} ${selectedDays === 1 ? "day" : "days"}`;
 
   return (
     <DemoPageShell title="Dashboard">
@@ -31,6 +38,21 @@ export default function DemoDashboardPage() {
             { key: "current", label: "Current balance", align: "right", render: (r) => fmtRs(r.current) },
           ]}
           rows={d.cashBank}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
+        <DemoStatCard
+          label="Average Income Per Day"
+          value={fmtRs(averageIncomePerDay)}
+          tone="green"
+          subtitle={`${fmtRs(d.income)} ÷ ${daysLabel}`}
+        />
+        <DemoStatCard
+          label="Average Expenses Per Day"
+          value={fmtRs(averageExpensePerDay)}
+          tone="red"
+          subtitle={`${fmtRs(d.expense)} ÷ ${daysLabel}`}
         />
       </div>
 
