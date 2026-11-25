@@ -111,6 +111,35 @@ export function ElectricityIcon({ className = "w-5 h-5" }: IconProps) {
   );
 }
 
+/** Colorful gas cylinder — Cylinder */
+export function CylinderIcon({ className = "w-5 h-5" }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" aria-hidden="true">
+      <rect x="7" y="3" width="10" height="2.4" rx="1.1" fill="#64748B" />
+      <path d="M9.5 3.6V2.6h5v1" stroke="#94A3B8" strokeWidth="1.2" strokeLinecap="round" />
+      <rect x="5" y="5.4" width="14" height="15.6" rx="4" fill="#F97316" />
+      <rect x="5" y="5.4" width="4" height="15.6" rx="2" fill="#FB923C" />
+      <path d="M9 10.5h6" stroke="#FFF7ED" strokeWidth="1.4" strokeLinecap="round" />
+      <rect x="8.5" y="12.5" width="7" height="3.2" rx="1" fill="#FFFFFF" />
+      <path d="M10 14.1h4" stroke="#F97316" strokeWidth="1" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+/** Colorful notepad with pencil — Enter Data */
+export function EnterDataIcon({ className = "w-5 h-5" }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" aria-hidden="true">
+      <rect x="4" y="4" width="14" height="17" rx="2.5" fill="#6366F1" />
+      <rect x="4" y="4" width="14" height="3.5" rx="1.75" fill="#4338CA" />
+      <rect x="7" y="10" width="8" height="1.8" rx="0.9" fill="#E0E7FF" />
+      <rect x="7" y="14" width="5.5" height="1.8" rx="0.9" fill="#E0E7FF" />
+      <path d="M15.2 19.6 16 15.8l5-5a1.3 1.3 0 0 1 1.8 0l.4.4a1.3 1.3 0 0 1 0 1.8l-5 5-2.9.9Z" fill="#FBBF24" />
+      <path d="M21.5 11 21 10.5 20 11.5l.5.5 1-1Z" fill="#F87171" />
+    </svg>
+  );
+}
+
 /** Colorful pie & bar analytics — Show Reports */
 export function ReportsIcon({ className = "w-5 h-5" }: IconProps) {
   return (
@@ -301,6 +330,8 @@ export function ReportItemIcon({ kind, className = "w-4 h-4" }: { kind: string; 
       return <MotorcycleIcon className={className} />;
     case "electricity":
       return <ElectricityIcon className={className} />;
+    case "cylinder":
+      return <CylinderIcon className={className} />;
     default:
       return <ReportsIcon className={className} />;
   }
