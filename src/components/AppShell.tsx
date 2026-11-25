@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import Swal from "sweetalert2";
+import { usePathname } from "next/navigation";
 import { FaBars, FaChevronDown, FaTimes } from "react-icons/fa";
 import { useAuth } from "@/context/AuthContext";
 import ContactUsModal from "@/components/ContactUsModal";
@@ -14,10 +13,11 @@ import {
   CashBookIcon,
   ChartOfAccountsIcon,
   ContactIcon,
+  CylinderIcon,
   DashboardIcon,
   ElectricityIcon,
+  EnterDataIcon,
   JournalVoucherIcon,
-  LogoutIcon,
   ManageAccountsIcon,
   MotorcycleIcon,
   ReportItemIcon,
@@ -34,12 +34,14 @@ const MANAGE_NAV = [
   { href: "/admin/chart-of-accounts", label: "Chart of Accounts", icon: ChartOfAccountsIcon },
 ];
 
+// "Enter Data" sub-links: the screens where day-to-day entries are typed in.
 const ENTRY_NAV = [
   { href: "/admin/cashbook", label: "Cash Book", icon: CashBookIcon },
   { href: "/admin/telly-cash", label: "Telly Cash", icon: TellyCashIcon },
   { href: "/admin/journal", label: "Journal Voucher", icon: JournalVoucherIcon },
   { href: "/admin/motorcycle", label: "Motorcycle", icon: MotorcycleIcon },
   { href: "/admin/electricity", label: "Electricity Bill", icon: ElectricityIcon },
+  { href: "/admin/cylinder", label: "Cylinder", icon: CylinderIcon },
 ];
 
 const REPORT_NAV = [
@@ -56,36 +58,79 @@ const REPORT_NAV = [
   { href: "/admin/reports/year-wise-comparison", label: "Year Wise Comparison", kind: "year-comparison" },
   { href: "/admin/reports/motorcycle", label: "Motorcycle Report", kind: "motorcycle" },
   { href: "/admin/reports/electricity", label: "Electricity Bill Report", kind: "electricity" },
+  { href: "/admin/reports/cylinder", label: "Cylinder Report", kind: "cylinder" },
 ];
 
-function getInitials(name?: string): string {
-  if (!name) return "?";
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "?";
-  if (parts.length === 1) return parts[0][0].toUpperCase();
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+/** Collapsible sidebar section: a header row that toggles a dark sub-list. */
+function NavGroup({
+  label,
+  icon: Icon,
+  open,
+  active,
+  onToggle,
+  children,
+}: {
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  open: boolean;
+  active: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className={`flex items-center justify-between w-full px-4 py-2.5 text-sm transition-colors ${
+          active && !open
+            ? "bg-[#2563EB] text-white font-medium"
+            : "text-slate-200 hover:bg-white/[0.08] hover:text-white"
+        }`}
+      >
+        <span className="flex items-center gap-3 min-w-0">
+          <Icon className="w-5 h-5 shrink-0" />
+          <span className="truncate">{label}</span>
+        </span>
+        <FaChevronDown
+          size={11}
+          className={`shrink-0 text-slate-400 transition-transform duration-200 ${
+            open ? "rotate-180 text-white" : ""
+          }`}
+        />
+      </button>
+
+      {open && <div className="bg-[#0B1120] py-1 border-y border-white/5">{children}</div>}
+    </div>
+  );
 }
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const pathname = usePathname();
-  const router = useRouter();
   const isAdmin = user?.role === "admin";
 
-  const onReportRoute = pathname.startsWith("/admin/reports");
   const onManageRoute = MANAGE_NAV.some((link) => pathname === link.href);
-  const [reportsOpen, setReportsOpen] = useState(onReportRoute);
+  const onEntryRoute = ENTRY_NAV.some((link) => pathname === link.href);
+  const onReportRoute = pathname.startsWith("/admin/reports");
   const [manageOpen, setManageOpen] = useState(onManageRoute);
+  const [entryOpen, setEntryOpen] = useState(onEntryRoute);
+  const [reportsOpen, setReportsOpen] = useState(onReportRoute);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
 
-  // Keep Show Reports expanded when navigating onto a report route, and close mobile drawer.
+  // Keep each section expanded when navigating onto one of its screens, and
+  // close the mobile drawer.
   useEffect(() => {
-    if (pathname.startsWith("/admin/reports")) {
-      setReportsOpen(true);
-    }
     if (MANAGE_NAV.some((link) => pathname === link.href)) {
       setManageOpen(true);
+    }
+    if (ENTRY_NAV.some((link) => pathname === link.href)) {
+      setEntryOpen(true);
+    }
+    if (pathname.startsWith("/admin/reports")) {
+      setReportsOpen(true);
     }
     setMobileOpen(false);
   }, [pathname]);
@@ -99,21 +144,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  async function handleLogout() {
-    setMobileOpen(false);
-    const result = await Swal.fire({
-      icon: "question",
-      title: "Log out?",
-      showCancelButton: true,
-      confirmButtonText: "Log out",
-      confirmButtonColor: "#B3452C",
-    });
-    if (result.isConfirmed) {
-      await logout();
-      router.push("/login");
-    }
-  }
-
   function isActive(href: string, exact = false) {
     if (exact) return pathname === href;
     return pathname === href || pathname.startsWith(href + "/");
@@ -124,6 +154,13 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       active
         ? "bg-[#2563EB] text-white font-medium"
         : "text-slate-200 hover:bg-white/[0.08] hover:text-white"
+    }`;
+
+  const subLinkClass = (active: boolean) =>
+    `flex items-center gap-2.5 pl-8 pr-4 py-2 text-[13px] transition-colors ${
+      active
+        ? "bg-[#2563EB] text-white font-medium"
+        : "text-slate-300 hover:bg-white/[0.07] hover:text-white"
     }`;
 
   const sidebarContent = (
@@ -160,110 +197,62 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           <span className="truncate">Dashboard</span>
         </Link>
 
-        {ENTRY_NAV.map((item) => {
-          const Icon = item.icon;
-          return (
-            <Link key={item.href} href={item.href} className={linkClass(isActive(item.href))}>
-              <Icon className="w-5 h-5 shrink-0" />
-              <span className="truncate">{item.label}</span>
-            </Link>
-          );
-        })}
+        {/* Manage Accounts sits directly under Dashboard */}
+        <NavGroup
+          label="Manage Accounts"
+          icon={ManageAccountsIcon}
+          open={manageOpen}
+          active={onManageRoute}
+          onToggle={() => setManageOpen((o) => !o)}
+        >
+          {MANAGE_NAV.map((link) => {
+            const Icon = link.icon;
+            return (
+              <Link key={link.href} href={link.href} className={subLinkClass(isActive(link.href, true))}>
+                <Icon className="w-4 h-4 shrink-0" />
+                <span className="truncate">{link.label}</span>
+              </Link>
+            );
+          })}
+        </NavGroup>
 
-        {/* Expandable Manage Accounts section */}
-        <div>
-          <button
-            type="button"
-            onClick={() => setManageOpen((o) => !o)}
-            aria-expanded={manageOpen}
-            className={`flex items-center justify-between w-full px-4 py-2.5 text-sm transition-colors ${
-              onManageRoute && !manageOpen
-                ? "bg-[#2563EB] text-white font-medium"
-                : "text-slate-200 hover:bg-white/[0.08] hover:text-white"
-            }`}
-          >
-            <span className="flex items-center gap-3 min-w-0">
-              <ManageAccountsIcon className="w-5 h-5 shrink-0" />
-              <span className="truncate">Manage Accounts</span>
-            </span>
-            <FaChevronDown
-              size={11}
-              className={`shrink-0 text-slate-400 transition-transform duration-200 ${
-                manageOpen ? "rotate-180 text-white" : ""
-              }`}
-            />
-          </button>
+        {/* Enter Data: where the day-to-day entries are typed in */}
+        <NavGroup
+          label="Enter Data"
+          icon={EnterDataIcon}
+          open={entryOpen}
+          active={onEntryRoute}
+          onToggle={() => setEntryOpen((o) => !o)}
+        >
+          {ENTRY_NAV.map((item) => {
+            const Icon = item.icon;
+            return (
+              <Link key={item.href} href={item.href} className={subLinkClass(isActive(item.href))}>
+                <Icon className="w-4 h-4 shrink-0" />
+                <span className="truncate">{item.label}</span>
+              </Link>
+            );
+          })}
+        </NavGroup>
 
-          {manageOpen && (
-            <div className="bg-[#0B1120] py-1 border-y border-white/5">
-              {MANAGE_NAV.map((link) => {
-                const active = isActive(link.href, true);
-                const Icon = link.icon;
-                return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className={`flex items-center gap-2.5 pl-8 pr-4 py-2 text-[13px] transition-colors ${
-                      active
-                        ? "bg-[#2563EB] text-white font-medium"
-                        : "text-slate-300 hover:bg-white/[0.07] hover:text-white"
-                    }`}
-                  >
-                    <Icon className="w-4 h-4 shrink-0" />
-                    <span className="truncate">{link.label}</span>
-                  </Link>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* Expandable Reports section */}
-        <div>
-          <button
-            type="button"
-            onClick={() => setReportsOpen((o) => !o)}
-            aria-expanded={reportsOpen}
-            className={`flex items-center justify-between w-full px-4 py-2.5 text-sm transition-colors ${
-              onReportRoute && !reportsOpen
-                ? "bg-[#2563EB] text-white font-medium"
-                : "text-slate-200 hover:bg-white/[0.08] hover:text-white"
-            }`}
-          >
-            <span className="flex items-center gap-3 min-w-0">
-              <ReportsIcon className="w-5 h-5 shrink-0" />
-              <span className="truncate">Show Reports</span>
-            </span>
-            <FaChevronDown
-              size={11}
-              className={`shrink-0 text-slate-400 transition-transform duration-200 ${
-                reportsOpen ? "rotate-180 text-white" : ""
-              }`}
-            />
-          </button>
-
-          {reportsOpen && (
-            <div className="bg-[#0B1120] py-1 border-y border-white/5">
-              {REPORT_NAV.map((report) => {
-                const active = isActive(report.href);
-                return (
-                  <Link
-                    key={report.href}
-                    href={report.href}
-                    className={`flex items-center gap-2.5 pl-8 pr-4 py-2 text-[13px] transition-colors ${
-                      active
-                        ? "bg-[#2563EB] text-white font-medium"
-                        : "text-slate-300 hover:bg-white/[0.07] hover:text-white"
-                    }`}
-                  >
-                    <ReportItemIcon kind={report.kind} className="w-4 h-4 shrink-0" />
-                    <span className="truncate">{report.label}</span>
-                  </Link>
-                );
-              })}
-            </div>
-          )}
-        </div>
+        {/* Show Reports */}
+        <NavGroup
+          label="Show Reports"
+          icon={ReportsIcon}
+          open={reportsOpen}
+          active={onReportRoute}
+          onToggle={() => setReportsOpen((o) => !o)}
+        >
+          {REPORT_NAV.map((report) => {
+            const active = isActive(report.href);
+            return (
+              <Link key={report.href} href={report.href} className={subLinkClass(active)}>
+                <ReportItemIcon kind={report.kind} className="w-4 h-4 shrink-0" />
+                <span className="truncate">{report.label}</span>
+              </Link>
+            );
+          })}
+        </NavGroup>
 
         {isAdmin && (
           <Link href="/admin" className={linkClass(isActive("/admin", true))}>
@@ -292,26 +281,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </button>
       </nav>
 
-      {/* Bottom user profile & logout */}
+      {/* Bottom profile: avatar + name; click for the email and Logout dropdown */}
       {user && (
         <div className="border-t border-white/10 p-3 shrink-0 bg-[#0B1120]">
-          <div className="flex items-center gap-2.5 px-1 pb-2.5">
-            <span className="w-8 h-8 rounded-full bg-primary text-white text-xs font-semibold flex items-center justify-center shrink-0">
-              {getInitials(user.name)}
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-white truncate">{user.name}</p>
-              <p className="text-[11px] text-slate-400 truncate">{user.email}</p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm text-rose-300 hover:bg-rose-500/15 hover:text-rose-200 transition-colors"
-          >
-            <LogoutIcon className="w-4 h-4 shrink-0" />
-            <span>Logout</span>
-          </button>
+          <UserMenu variant="sidebar" />
         </div>
       )}
     </div>

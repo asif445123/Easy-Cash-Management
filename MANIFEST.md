@@ -1,3 +1,43 @@
+# Enter Data menu, Cylinder module, sidebar profile dropdown
+
+## Navigation (sidebar order)
+- Dashboard
+- **Manage Accounts** — moved up so it sits directly under Dashboard.
+- **Enter Data** (new group, below Manage Accounts) — expands to:
+  Cash Book, Telly Cash, Journal Voucher, Motorcycle, Electricity Bill, Cylinder.
+  These entry screens were previously top-level links; they now live only here.
+- Show Reports — now also lists **Cylinder Report**.
+- User approvals (admin), then Settings and Contact Us.
+
+## Sidebar profile — dropdown
+- `src/components/UserMenu.tsx` — new `variant="sidebar"`. The bottom of the
+  sidebar shows only the avatar circle and the user's name (with a ▲ marker).
+  Clicking it opens a panel above the profile with the signed-in name, email,
+  and **Logout**. The separate Logout button and always-visible email under
+  the name were removed from the sidebar.
+- The desktop top bar and mobile top bar use the same dropdown (name, email, Logout).
+
+## New — Cylinder (`/admin/cylinder`, Enter Data → Cylinder)
+- `src/models/CylinderPurchase.ts` — date, amount (Rs), rate (Rs per kg),
+  quantity (kg, = amount ÷ rate).
+- `src/app/api/admin/cylinder/route.ts` (list/create) and
+  `src/app/api/admin/cylinder/[id]/route.ts` (update/delete).
+- `src/app/admin/cylinder/page.tsx` — entry form (Date, Amount (Rs),
+  Rate (Rs per kg)) and a table of DATE / AMOUNT / RATE / QUANTITY / ACTIONS.
+
+## New — Cylinder Report (`/admin/reports/cylinder`, Show Reports → Cylinder Report)
+- `src/app/api/admin/reports/cylinder/route.ts` — read-only. Each purchase's
+  period runs until the next purchase (the last one runs to the "To" date).
+  Totals: total kg, total spent, per-day cost, per-kg cost, and average kg/day
+  over completed fill-up periods.
+- `src/app/admin/reports/cylinder/page.tsx` — From/To range, stat cards,
+  "Cylinder average", and a purchase table. Click a row for its period, per-day
+  cost, kg per day, rate, and next fill-up date.
+
+## Icons
+- `src/components/SidebarIcons.tsx` — new `CylinderIcon`, `EnterDataIcon`, and a
+  `cylinder` case in `ReportItemIcon`.
+
 # Manage Accounts menu, Chart of Accounts, logout-only dropdown, Inventory removed
 
 ## Navigation
