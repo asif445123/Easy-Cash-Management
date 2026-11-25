@@ -7,6 +7,7 @@ import { FaPlus, FaChevronDown } from "react-icons/fa";
 const ENTRY_LINKS = [
   { href: "/admin/account-types", label: "Account Types" },
   { href: "/admin/accounts", label: "Accounts Master File" },
+  { href: "/admin/chart-of-accounts", label: "Chart of Accounts" },
   { href: "/admin/cashbook", label: "Cash Book" },
   { href: "/admin/telly-cash", label: "Telly Cash" },
   { href: "/admin/journal", label: "Journal Voucher" },
